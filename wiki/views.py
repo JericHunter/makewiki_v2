@@ -1,9 +1,12 @@
 from django.shortcuts import render
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
-
+from django.views.generic.edit import CreateView
 from wiki.models import Page
-
+from django.utils import timezone
+from wiki.forms import PageCreateForm
+from django.http import HttpResponseRedirect
+from django.urls import reverse_lazy
 
 class PageListView(ListView):
     """ Renders a list of all Pages. """
@@ -12,6 +15,7 @@ class PageListView(ListView):
     def get(self, request):
         """ GET a list of Pages. """
         pages = self.get_queryset().all()
+        # upcoming = Page.objects.filter(date__gte=now).order_by('date')
         return render(request, 'list.html', {
           'pages': pages
         })
@@ -26,3 +30,15 @@ class PageDetailView(DetailView):
         return render(request, 'page.html', {
           'page': page
         })
+
+class PageCreateView(CreateView):
+    def get(self, request, *args, **kwargs):
+      page = {'form': PageCreateForm()}
+      return render(request, 'new.html', page)
+    def post(self, request, *args, **kwargs):
+      form = PageCreateForm(request.POST)
+      if form.is_valid():
+          page = form.save()
+          page.save()
+          return HttpResponseRedirect(reverse_lazy('pages:detail', args=[page.id]))
+      return render(request, 'new.html', {'form': form})
